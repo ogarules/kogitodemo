@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dmn:definitions xmlns:dmn="http://www.omg.org/spec/DMN/20180521/MODEL/" xmlns="https://kiegroup.org/dmn/_E0E2810E-881E-4BF2-9CEA-90B918F6BF67" xmlns:feel="http://www.omg.org/spec/DMN/20180521/FEEL/" xmlns:kie="http://www.drools.org/kie/dmn/1.2" xmlns:dmndi="http://www.omg.org/spec/DMN/20180521/DMNDI/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="_C4467CC6-7BE4-473D-88DE-EE1F3508D017" name="fintech" typeLanguage="http://www.omg.org/spec/DMN/20180521/FEEL/" namespace="https://kiegroup.org/dmn/_E0E2810E-881E-4BF2-9CEA-90B918F6BF67">
+  <dmn:extensionElements/>
+  <dmn:itemDefinition id="_25988931-BC6C-4CEC-97DE-937A1E803E7E" name="tPedido" isCollection="false">
+    <dmn:itemComponent id="_A00C8EFC-71CB-4286-B6FF-B93B6212F2B4" name="montoTotal" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_54E4FC24-947F-4AEB-8481-0327E19E27C6" name="comision" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_8C2DACF3-6838-41AB-A20F-5FF10558C657" name="montoFactura" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_A1F0CC8C-3E17-4E03-BA4B-9A1309D010B8" name="iva" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_2E07EE0E-A3E1-4BD3-B1B7-5278ED24D9BF" name="monto" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_8870B548-A972-459B-9B1A-0D07705AEEB7" name="esFintech" isCollection="false">
+      <dmn:typeRef>boolean</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_113DD59F-0322-4951-A8AA-9EBDB6A3D1FB" name="fechadeCreacion" isCollection="false">
+      <dmn:typeRef>date and time</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_8E25E583-2D7B-4F7F-81C4-9EA26C4DEA8D" name="codigoVerificacion" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_4E2824FA-2F90-450A-A805-B5B3C20B8868" name="producto" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_4A684E6B-A702-45E0-9417-859DAE814152" name="tipoDePedido" isCollection="false"/>
+    <dmn:itemComponent id="_E92273E7-CFB2-4CF6-AEAC-F2756388F305" name="noCliente" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_EF782235-4348-442D-B64B-9105FC7B3E12" name="nombreCliente" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+  </dmn:itemDefinition>
+  <dmn:inputData id="_FA45FBA1-474D-4BFF-BB92-11373C26FC11" name="Pedido">
+    <dmn:extensionElements/>
+    <dmn:variable id="_1A193627-10EE-4A57-816A-BD5FB5749DCF" name="Pedido" typeRef="tPedido"/>
+  </dmn:inputData>
+  <dmn:decision id="_0D9429A5-6024-4C00-9937-E50854358D1F" name="esFintech">
+    <dmn:extensionElements/>
+    <dmn:variable id="_25EC5E48-820C-4171-B5BC-50A250F561EB" name="esFintech" typeRef="boolean"/>
+    <dmn:informationRequirement id="_8861DA9C-B7F0-44B3-AACB-FA35926CFC86">
+      <dmn:requiredInput href="#_FA45FBA1-474D-4BFF-BB92-11373C26FC11"/>
+    </dmn:informationRequirement>
+    <dmn:decisionTable id="_C8CD890C-4E9C-46F9-B570-901508615FC1" hitPolicy="UNIQUE" preferredOrientation="Rule-as-Row">
+      <dmn:input id="_27067C78-CE39-4F57-B11B-2592BC87C2BE">
+        <dmn:inputExpression id="_67B049D6-E78C-4DAA-9923-7A898A423AC0" typeRef="string">
+          <dmn:text>Pedido.tipoDePedido</dmn:text>
+        </dmn:inputExpression>
+      </dmn:input>
+      <dmn:output id="_FA645888-089E-4CA6-B3C3-7034E297C925"/>
+      <dmn:annotation name="Description"/>
+      <dmn:rule id="_82309545-3178-4A1A-95E2-5A4B99E506B2">
+        <dmn:inputEntry id="_191445AB-6943-496F-AC05-8D40DA4BBCB3">
+          <dmn:text>"Fondeo Fintech"</dmn:text>
+        </dmn:inputEntry>
+        <dmn:outputEntry id="_177CBF65-D4D7-4A5C-8A9F-633357C1F303">
+          <dmn:text>true</dmn:text>
+        </dmn:outputEntry>
+        <dmn:annotationEntry>
+          <dmn:text/>
+        </dmn:annotationEntry>
+      </dmn:rule>
+      <dmn:rule id="_923E35D0-D462-4340-A272-74852BDA3FDB">
+        <dmn:inputEntry id="_F386148A-EE73-41E4-A504-2F904B498F81">
+          <dmn:text>"Fondeo"</dmn:text>
+        </dmn:inputEntry>
+        <dmn:outputEntry id="_8351C756-54E0-40C8-A9D9-4E334295CC74">
+          <dmn:text>false</dmn:text>
+        </dmn:outputEntry>
+        <dmn:annotationEntry>
+          <dmn:text/>
+        </dmn:annotationEntry>
+      </dmn:rule>
+    </dmn:decisionTable>
+  </dmn:decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_A5CD08A2-67F1-4FD0-AE17-7A037C0B39BE" name="DRG">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_C8CD890C-4E9C-46F9-B570-901508615FC1">
+            <kie:width>50</kie:width>
+            <kie:width>196</kie:width>
+            <kie:width>100</kie:width>
+            <kie:width>100</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="dmnshape-drg-_FA45FBA1-474D-4BFF-BB92-11373C26FC11" dmnElementRef="_FA45FBA1-474D-4BFF-BB92-11373C26FC11" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="165" y="198" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="dmnshape-drg-_0D9429A5-6024-4C00-9937-E50854358D1F" dmnElementRef="_0D9429A5-6024-4C00-9937-E50854358D1F" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="354" y="199" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="dmnedge-drg-_8861DA9C-B7F0-44B3-AACB-FA35926CFC86" dmnElementRef="_8861DA9C-B7F0-44B3-AACB-FA35926CFC86">
+        <di:waypoint x="215" y="223"/>
+        <di:waypoint x="404" y="224"/>
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</dmn:definitions>

@@ -1,0 +1,637 @@
+<!--
+  ~ Copyright 2020 Red Hat, Inc. and/or its affiliates.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kogito Travel Agency</title>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container" role="main">
+    <div class="jumbotron">
+        <h1>Pedidos Sivale</h1>
+
+        <p>Fondeo</p>
+    </div>
+    <div class="page-header">
+        <div class="btn-group pull-right" role="group" style="padding-top: 10px;">
+            <button class="btn btn-primary" onclick="load();">
+                <span class="glyphicon glyphicon-refresh"></span> Actualizar
+            </button>
+            <button class="btn btn-primary product-add" data-action="add" data-toggle="modal"
+                    data-target="#productModal">
+                <span class="glyphicon glyphicon-plus"></span> Nuevo Fondeo
+            </button>
+        </div>
+        <h1>Fondeos</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Area de negocio</th>
+                    <th>Fecha Creación</th>
+                    <th>No Cliente</th>
+                    <th>Nombre Cliente</th>
+                    <th>Producto</th>
+                    <th>Fintech</th>
+                    <th>Monto</th>
+                    <th>Iva</th>
+                    <th>Monto Factura</th>
+                    <th>Comision</th>
+                    <th>Monto Total</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="content">
+                <!-- filled using Ajax -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    const graphql = '{config:property('kogito.dataindex.http.url') or 'http://localhost:8180'}/graphql';
+    const userFilter = "?user=jdoe";
+
+    $(function () {
+        $.ajaxSetup({
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        $(function () {
+            // $("#tripBegin").datepicker({
+            //     dateFormat: "yy-mm-dd"
+            // });
+            // $("#tripEnd").datepicker({
+            //     dateFormat: "yy-mm-dd"
+            // });
+        });
+        load();
+        initModal();
+
+        if ("WebSocket" in window) {
+
+           // Let us open a web socket
+           var ws = new WebSocket('{config:property('kogito.dataindex.ws.url') or 'ws://localhost:8180'}/graphql');
+
+           ws.onopen = function() {
+              // Web Socket is connected, send data using send()
+               ws.send('{"id" : "1", "type" : "connection_init"}');
+           };
+
+           ws.onmessage = function (evt) {
+              var received_msg = evt.data;
+              let jsonObject = JSON.parse(received_msg);
+               if(jsonObject.type === 'connection_ack'){
+                   ws.send('{"id" : "2", "type" : "start", "payload" : { "query" : "subscription { PedidosUpdated { id, pedido { tipoDePedido, noCliente, nombreCliente, producto, codigoVerificacion, fechadeCreacion, esFintech, monto, iva, montoFactura, comision, montoTotal } metadata { processInstances { businessKey, state } } } }"}}');
+               } else if(jsonObject.type === 'data') {
+                   var val = jsonObject.payload.data.PedidosUpdated;
+
+                   var existing = document.getElementById(val.id);
+                   if (existing != null) {
+                       existing.remove();
+                   }
+
+                   appendDataRow(null, val);
+               }
+           };
+
+           ws.onclose = function() {
+
+              // websocket is closed.
+           };
+        }
+    });
+
+    function create(travelRequest) {
+        var key = makeid();
+        $.post("/pedidos?businessKey=" + key, travelRequest, function () {
+            load();
+        }, "json");
+    }
+
+    function makeid() {
+        var result = '';
+        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        var charactersLength = characters.length;
+        for (var i = 0; i < 6; i++) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+    }
+
+    function remove(id) {
+        $.ajax({
+            method: "DELETE",
+            url: "/pedidos/" + id
+        }).done(function () {
+
+        });
+    }
+
+    function submitVisaApplication() {
+
+        var application = {
+            tipoDePedido: $("#codigo_tipodepedido").val(),
+            noCliente: $("#codigo_nocliente").val(),
+            nombreCliente: $("#codigo_nombrecliente").val(),
+            producto: $("#codigo_producto").val(),
+            codigoVerificacion: $("#codigo_codigoverificacion").val(),
+            fechadeCreacion: $("#codigo_fechadecreacion").val(),
+            esFintech: Boolean($("#codigo_esfintech").val()),
+            monto: Number($("#codigo_monto").val()),
+            iva: Number($("#codigo_iva").val()),
+            montoFactura: Number($("#codigo_montofactura").val()),
+            comision: Number($("#codigo_comision").val()),
+            montoTotal: Number($("#codigo_montototal").val())
+        };
+        var pedidoRequest = JSON.stringify(\{pedido: application\});
+
+        $.post("/pedidos/" + $("#codigo_p_id").val() + "/CapturarCodigo/" + $("#codigo_t_id").val() + userFilter, pedidoRequest, function () {
+
+        }, "json");
+    }
+
+    function completeTask(id, taskName, taskId) {
+        $.post("/pedidos/" + id + "/" + taskName + "/" + taskId, JSON.stringify({}), function () {
+
+        }, "json");
+    }
+
+    function load() {
+        $("#content").children().remove();
+        var query = "{ \"query\": \"" +
+                "{ Pedidos { " +
+                "id " +
+                "pedido { tipoDePedido, noCliente, nombreCliente, producto, codigoVerificacion, fechadeCreacion, esFintech, monto, iva, montoFactura, comision, montoTotal } " +
+                "metadata { processInstances { state, businessKey } } " +
+                "}}\"" +
+                "}";
+        $.ajax({
+            type: 'POST',
+            url: graphql,
+            data: query,
+            success: function (data) {
+                $.each(data.data["Pedidos"], function (key, val) {
+                    appendDataRow(key, val);
+                });
+                initCallbacks();
+            }
+        });
+    }
+
+    function appendDataRow(key, val) {
+      var active = $.grep(val.metadata.processInstances, function (pi) {
+          return pi.state == "ACTIVE"
+      }).length > 0;
+      var html =
+              "<tr id='" + val.id + "' class='" + (active ? "" : "active") + "'>" +
+              "<td>" + val.metadata.processInstances[0].businessKey + "</td>" +
+              "<td>" + val.pedido.fechadeCreacion + "</td>" +
+              "<td>" + val.pedido.noCliente + "</td>" +
+              "<td>" + val.pedido.nombreCliente + "</td>" +
+              "<td>" + val.pedido.producto + "</td>" +
+              "<td>" + (val.pedido.esFintech ? 'Si' : 'No') + "</td>" +
+              "<td>" + val.pedido.monto + "</td>" +
+              "<td>" + val.pedido.iva + "</td>" +
+              "<td>" + val.pedido.montoFactura + "</td>" +
+              "<td>" + val.pedido.comision + "</td>" +
+              "<td>" + val.pedido.montoTotal + "</td>" +
+              "<td>" +
+              "<button class='btn btn-primary btn-sm' " +
+              "data-toggle='modal' " +
+              "data-target='#detailsModal' " +
+              "data-tipodepedido='" + val.pedido.tipoDePedido + "' " +
+              "data-nocliente='" + val.pedido.noCliente + "' " +
+              "data-nombrecliente='" + val.pedido.nombreCliente + "' " +
+              "data-producto='" + val.pedido.producto + "' " +
+              "data-codigoverificacion='" + val.pedido.codigoVerificacion + "' " +
+              "data-fechadecreacion='" + val.pedido.fechadeCreacion + "' " +
+              "data-esfintech='" + val.pedido.esFintech + "' " +
+              "data-monto='" + val.pedido.monto + "' " +
+              "data-iva='" + val.pedido.iva + "' " +
+              "data-montofactura='" + val.pedido.montoFactura + "' " +
+              "data-comision='" + val.pedido.comision + "' " +
+              "data-montototal='" + val.pedido.montoTotal + "' " +
+              "data-id='" + val.id + "'>" +
+              "   <span>Detalle</span>" +
+              "</button>&nbsp;";
+      if (active) {
+          html +=
+                  "<button class='btn btn-primary btn-sm' " +
+                  "data-toggle='modal' " +
+                  "data-target='#tasksModal' " +
+                  "data-nocliente='" + val.pedido.noCliente + "' " +
+                  "data-nombrecliente='" + val.pedido.nombreCliente + "' " +
+                  "data-id='" + val.id + "'>" +
+                  "   <span>Etapas</span>" +
+                  "</button>&nbsp;" +
+                  "<button class='btn btn-danger btn-sm product-delete' data-id='" + val.id + "'>" +
+                  "   <span>Cancelar</span>" +
+                  "</button>";
+      }
+      html += "</td></tr>";
+      $(html).appendTo("#content");
+    }
+
+    function initCallbacks() {
+        $(".product-delete").unbind().click(function () {
+            var id = $(this).data("id");
+            remove(id);
+        });
+
+    }
+
+    function initModal() {
+        $("#productModal").on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var action = button.data('action');
+            var id = button.data('id');
+            var productAction = $("#productAction");
+            productAction.unbind();
+            var modal = $(this);
+            modal.find('.modal-title').text("Crear fondeo");
+            modal.find('#tipodepedido').val("");
+            modal.find('#nocliente').val("");
+            modal.find('#nombrecliente').val("");
+            modal.find('#producto').val("");
+            modal.find('#codigoverificacion').val("");
+            modal.find('#fechadecreacion').val((new Date()).toISOString());
+            modal.find('#esfintech').val("");
+            modal.find('#monto').val("");
+            modal.find('#iva').val("");
+            modal.find('#montofactura').val("");
+            modal.find('#comision').val("");
+            modal.find('#montototal').val("");
+
+            productAction.click(function () {
+
+                var pedido = {
+                    tipoDePedido: $("#tipodepedido").val(),
+                    noCliente: $("#nocliente").val(),
+                    nombreCliente: $("#nombrecliente").val(),
+                    producto: $("#producto").val(),
+                    codigoVerificacion: $("#codigoverificacion").val(),
+                    fechadeCreacion: $("#fechadecreacion").val(),
+                    esFintech: Boolean($("#esfintech").val()),
+                    monto: Number($("#monto").val()),
+                    iva: Number($("#iva").val()),
+                    montoFactura: Number($("#montofactura").val()),
+                    comision: Number($("#comision").val()),
+                    montoTotal: Number($("#montototal").val())
+                };
+                
+                var travelRequest = JSON.stringify(\{pedido: pedido \});
+
+                create(travelRequest);
+                $('#productModal').modal('toggle');
+            });
+
+        })
+
+        $("#detailsModal").on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var action = button.data('action');
+            var id = button.data('id');
+            var modal = $(this);
+            modal.find('.modal-title').text("Fondeo para " + button.data("nocliente") + ", " + button.data("nombrecliente"));
+            modal.find('#tipodepedido').val(button.data("tipodepedido"));
+            modal.find('#nocliente').val(button.data("nocliente"));
+            modal.find('#nombrecliente').val(button.data("nombrecliente"));
+            modal.find('#producto').val(button.data("producto"));
+            modal.find('#codigoverificacion').val(button.data("codigoverificacion"));
+            modal.find('#fechadecreacion').val(button.data("fechadecreacion"));
+            modal.find('#esfintech').val(button.data("esfintech"));
+            modal.find('#monto').val(button.data("monto"));
+            modal.find('#iva').val(button.data("iva"));
+            modal.find('#montofactura').val(button.data("montofactura"));
+            modal.find('#comision').val(button.data("comision"));
+            modal.find('#montototal').val(button.data("montototal"));
+        })
+
+        $("#tasksModal").on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var action = button.data('action');
+            var id = button.data('id');
+            var modal = $(this);
+            modal.find('.modal-title').text("Etapas para " + button.data("nocliente") + ", " + button.data("nombrecliente"));
+
+            $("#taskscontent").children().remove();
+            $.getJSON("/pedidos/" + id + "/tasks"+userFilter, function (data) {
+                $.each(data, function (key, val) {
+                    if ("CapturarCodigo" == val.name) {
+                        $("<tr><td>" + "Capturar código de verificación" + "</td>" +
+                                "<td>" +
+                                "<button class='btn btn-primary btn-sm' " +
+                                "data-dismiss=\"modal\" " +
+                                "data-toggle='modal' " +
+                                "data-target='#visaApplicationModal' " +
+                                "data-id='" + id + "' " +
+                                "data-taskid='" + val.id + "'>" +
+                                "   <span>Capturar</span>" +
+                                "</button>" +
+                                "</td>" +
+                                "</tr>").appendTo("#taskscontent");
+                    } else {
+                        $("<tr><td>" + val.name + "</td>" +
+                                "<td>" +
+                                "<button class='btn btn-primary btn-sm' onclick=\"completeTask('" + id + "', '" + val.name + "', '" + val.id + userFilter + "')\" data-dismiss=\"modal\" " +
+                                "   <span>Completar</span>" +
+                                "</button>" +
+                                "</td>" +
+                                "</tr>").appendTo("#taskscontent");
+                    }
+                });
+
+            })
+
+            $("#visaApplicationModal").on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+
+                var id = button.data('id');
+                var taskid = button.data('taskid');
+                var modal = $(this);
+                modal.find('.modal-title').text("Código de verificación");
+
+                $.getJSON("/pedidos/" + id + "/CapturarCodigo/" + taskid + userFilter, function (data) {
+
+                    $("#codigo_tipodepedido").val(data.parameters.pedido.tipoDePedido);
+                    $("#codigo_nocliente").val(data.parameters.pedido.noCliente);
+                    $("#codigo_nombrecliente").val(data.parameters.pedido.nombreCliente);
+                    $("#codigo_producto").val(data.parameters.pedido.producto);
+                    $("#codigo_codigoverificacion").val(data.parameters.pedido.codigoVerificacion);
+                    $("#codigo_fechadecreacion").val(data.parameters.pedido.fechadeCreacion);
+                    $("#codigo_esfintech").val(data.parameters.pedido.esFintech);
+                    $("#codigo_monto").val(data.parameters.pedido.monto);
+                    $("#codigo_iva").val(data.parameters.pedido.iva);
+                    $("#codigo_montofactura").val(data.parameters.pedido.montoFactura);
+                    $("#codigo_comision").val(data.parameters.pedido.comision);   
+                    $("#codigo_montototal").val(data.parameters.pedido.montoTotal);   
+
+                    $("#codigo_p_id").val(id);
+                    $("#codigo_t_id").val(taskid);
+                });
+
+            })
+        })
+    }
+</script>
+<div class="modal fade" id="productModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title" id="productModalTitle">Fondeo</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row">
+                        <h3>Pedido</h3>
+                        <div class="col-md-6 col-sm-6 col-xs-6">
+                            <div class="form-group">
+                                <label for="nocliente">No Cliente</label> <input type="text" class="form-control" id="nocliente" name="nocliente" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombrecliente">Nombre del Cliente</label> <input type="text" class="form-control" id="nombrecliente" name="nombrecliente" required>
+                            </div>
+                           
+                            <div class="form-group">
+                                <label for="tipodepedido">Tipo</label>
+                                <select class="form-control" id="tipodepedido"
+                                        name="tipodepedido">
+                                    <option value="Fondeo Fintech">Fondeo Fintech</option>
+                                    <option value="Fondeo">Fondeo</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="producto">Tipo</label>
+                                <select class="form-control" id="producto"
+                                        name="producto">
+                                    <option value="Mis Compras Plus">Mis Compras Plus</option>
+                                    <option value="Business Card Acceso Total">Business Card Acceso Total</option>
+                                    <option value="Si Corporativa">Si Corporativa</option>
+                                    <option value="Si Recompensa">Si Recompensa</option>
+                                </select>
+                            </div>
+
+                        </div>
+                        <div class="col-md-6 col-sm-6 col-xs-6">
+                            <div class="form-group">
+                                <label for="monto">Monto</label> <input type="number"
+                                                                          class="form-control" id="monto" name="monto" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="iva">Iva</label> <input type="number"
+                                                                          class="form-control" id="iva" name="iva" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="montofactura">Monto factura</label> <input type="text"
+                                                                      class="form-control" id="montofactura" name="montofactura" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="comision">Comisión</label> <input type="text"
+                                                                             class="form-control" id="comision" name="comision" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="montototal">Monto total</label> <input type="text"
+                                                                             class="form-control" id="montototal" name="montototal" readonly>
+                            </div>
+                            <input type="hidden" id="codigoverificacion" name="codigoverificacion">
+                            <input type="hidden" id="fechadecreacion" name="fechadecreacion">
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default"
+                                    data-dismiss="modal">Cancelar
+                            </button>
+                            <button type="button" id="productAction" class="btn btn-primary">Crear fondeo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title" id="detailsModalTitle">Detalles del fondeo</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row">
+
+                        <h3>Pedido</h3>
+                        <div class="col-md-6 col-sm-6 col-xs-6">
+                            <div class="form-group">
+                                <label for="nocliente">No Cliente</label> <input type="text" class="form-control" id="nocliente" name="nocliente" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombrecliente">Nombre del Cliente</label> <input type="text" class="form-control" id="nombrecliente" name="nombrecliente" readonly>
+                            </div>
+                           
+                            <div class="form-group">
+                                <label for="tipodepedido">Tipo</label>
+                                <input type="text" class="form-control" id="tipodepedido" name="tipodepedido" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="producto">Tipo</label>
+                                <input type="text" class="form-control" id="producto" name="producto" readonly>
+                            </div>
+
+                        </div>
+                        <div class="col-md-6 col-sm-6 col-xs-6">
+                            <div class="form-group">
+                                <label for="monto">Monto</label> <input type="number"
+                                                                          class="form-control" id="monto" name="monto" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="iva">Iva</label> <input type="number"
+                                                                          class="form-control" id="iva" name="iva" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="montofactura">Monto factura</label> <input type="text"
+                                                                      class="form-control" id="montofactura" name="montofactura" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="comision">Comisión</label> <input type="text"
+                                                                             class="form-control" id="comision" name="comision" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="montototal">Monto total</label> <input type="text"
+                                                                             class="form-control" id="montototal" name="montototal" readonly>
+                            </div>
+                            <input type="hidden" id="codigoverificacion" name="codigoverificacion">
+                            <input type="hidden" id="fechadecreacion" name="fechadecreacion">
+                        </div>
+                            
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="tasksModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title" id="detailsModalTitle">Detalles adicionales</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row">
+
+                        <div class="col-md-12">
+                            <h1>Etapas</h1>
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>Nombre de la etapa</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody id="taskscontent">
+                                <!-- filled using Ajax -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="visaApplicationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title" id="detailsModalTitle">Código de verificación</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row">
+                        <input type="hidden" id="codigo_p_id"/>
+                        <input type="hidden" id="codigo_t_id"/>
+                        <div class="col-md-12">
+                            <h1>Código</h1>
+                        </div>
+                        <div class="col-md-6 col-sm-6 col-xs-6">
+                            
+                            <div class="form-group">
+                                <label for="codigo_codigoverificacion">Código de verificación</label> <input type="text"
+                                                                                      class="form-control" id="codigo_codigoverificacion" name="codigo_codigoverificacion" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="hidden" class="form-control" id="codigo_tipodepedido" name="codigo_tipodepedido">
+                                <input type="hidden" class="form-control" id="codigo_nocliente" name="codigo_nocliente">
+                                <input type="hidden" class="form-control" id="codigo_nombrecliente" name="codigo_nombrecliente">
+                                <input type="hidden" class="form-control" id="codigo_producto" name="codigo_producto">
+                                <input type="hidden" class="form-control" id="codigo_fechadecreacion" name="codigo_fechadecreacion">
+                                <input type="hidden" class="form-control" id="codigo_esfintech" name="codigo_esfintech">
+                                <input type="hidden" class="form-control" id="codigo_monto" name="codigo_monto">
+                                <input type="hidden" class="form-control" id="codigo_iva" name="codigo_iva">
+                                <input type="hidden" class="form-control" id="codigo_montofactura" name="codigo_montofactura">
+                                <input type="hidden" class="form-control" id="codigo_comision" name="codigo_comision">
+                                <input type="hidden" class="form-control" id="codigo_montototal" name="codigo_montototal">
+                            </div>
+                            
+                        </div>
+
+                    </div>
+                    
+                    <div class="row">
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="submitVisaApplication()">Verificar codigo</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

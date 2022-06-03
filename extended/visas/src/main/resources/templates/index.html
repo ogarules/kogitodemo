@@ -1,0 +1,295 @@
+<!--
+  ~ Copyright 2020 Red Hat, Inc. and/or its affiliates.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmación de pago</title>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container" role="main">
+    <div class="jumbotron">
+        <h1>Confirmación de pago</h1>
+
+        <p>Servicio de confirmación de pago</p>
+    </div>
+    <div class="page-header">
+        <div class="btn-group pull-right" role="group" style="padding-top: 10px;">
+            <button class="btn btn-primary" onclick="load();">
+                <span class="glyphicon glyphicon-refresh"></span> Actualizar
+            </button>
+        </div>
+        <h1>Confirmación de pago</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Pedido</th>
+                    <th>Código de verificación</th>
+                    <th>Fecha Creación</th>
+                    <th>Monto</th>
+                    <th>Fintech</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="content">
+                <!-- filled using Ajax -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    const graphql = '{config:property('kogito.dataindex.http.url') or 'http://localhost:8180'}/graphql';
+    const userFilter = "?user=jdoe";
+
+    $(function () {
+        $.ajaxSetup({
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        load();
+        initModal();
+
+        if ("WebSocket" in window) {
+
+           // Let us open a web socket
+           var ws = new WebSocket('{config:property('kogito.dataindex.ws.url') or 'ws://localhost:8180'}/graphql');
+
+           ws.onopen = function() {
+              // Web Socket is connected, send data using send()
+               ws.send('{"id" : "1", "type" : "connection_init"}');
+           };
+
+           ws.onmessage = function (evt) {
+              var received_msg = evt.data;
+              let jsonObject = JSON.parse(received_msg);
+               if(jsonObject.type === 'connection_ack'){
+                   ws.send('{"id" : "2", "type" : "start", "payload" : { "query" : "subscription { PaymentConfirmationsUpdated { id, pedido { tipoDePedido, noCliente, nombreCliente, producto, codigoVerificacion, fechadeCreacion, esFintech, monto, iva, montoFactura, comision, montoTotal },  metadata { processInstances { state  } } } }"}}');
+               } else if(jsonObject.type === 'data') {
+                   var val = jsonObject.payload.data.PaymentConfirmationsUpdated;
+
+                   var existing = document.getElementById(val.id);
+                   if (existing != null) {
+                       existing.remove();
+                   }
+
+                   appendDataRow(null, val);
+               }
+           };
+
+           ws.onclose = function() {
+
+              // websocket is closed.
+           };
+        }
+    });
+
+    function load() {
+        $("#content").children().remove();
+        var query = "{ \"query\": \"" +
+                "{ PaymentConfirmations { " +
+                "id " +
+                "pedido { tipoDePedido, noCliente, nombreCliente, producto, codigoVerificacion, fechadeCreacion, esFintech, monto, iva, montoFactura, comision, montoTotal } " +
+                "metadata { processInstances { state  } } " +
+                "}}\"" +
+                "}";
+
+        $.ajax({
+            type: 'POST',
+            url: graphql,
+            data: query,
+            success: function (data) {
+                $.each(data.data["PaymentConfirmations"], function (key, val) {
+                    appendDataRow(key, val);
+                });
+                initCallbacks();
+            }
+        });
+    }
+
+    function appendDataRow(key, val) {
+      var active = $.grep(val.metadata.processInstances, function (pi) {
+          return pi.state == "ACTIVE"
+      }).length > 0;
+      var html =
+              "<tr id='" + val.id + "' class='" + (active ? "" : "active") + "'><td>" + val.pedido.noCliente + ", " + val.pedido.nombreCliente + "</td>" +
+              "<td>" + val.pedido.tipoDePedido + ", " + val.pedido.producto + "</td>" +
+              "<td>" + val.pedido.codigoVerificacion + " days</td>" +
+              "<td>" + val.pedido.fechadeCreacion + "</td>" +
+              "<td>" + val.pedido.monto + "</td>" +
+              "<td>" + (val.pedido.esFintech ? 'Si' : 'No') + "</td>" +
+              "<td>";
+      if (active) {
+          html +=
+                  "<button class='btn btn-primary btn-sm' " +
+                  "data-toggle='modal' " +
+                  "data-target='#detailsModal' " +
+                  "data-tipodepedido='" + val.pedido.tipoDePedido + "' " +
+                  "data-nocliente='" + val.pedido.noCliente + "' " +
+                  "data-nombrecliente='" + val.pedido.nombreCliente + "' " +
+                  "data-producto='" + val.pedido.producto + "' " +
+                  "data-codigoverificacion='" + val.pedido.codigoVerificacion + "' " +
+                  "data-fechadecreacion='" + val.pedido.fechadeCreacion + "' " +
+                  "data-esfintech='" + val.pedido.esFintech + "' " +
+                  "data-monto='" + val.pedido.monto + "' " +
+                  "data-iva='" + val.pedido.iva + "' " +
+                  "data-montofactura='" + val.pedido.montoFactura + "' " +
+                  "data-comision='" + val.pedido.comision + "' " +
+                  "data-montototal='" + val.pedido.montoTotal + "' " +
+                  "data-id='" + val.id + "'>" +
+                  "   <span>Confirmar</span>" +
+                  "</button>&nbsp;";
+      }
+      html += "</td></tr>";
+      $(html).appendTo("#content");
+    }
+
+    function initCallbacks() {
+
+    }
+
+    function submitVisaApplicationApproval(decision) {
+
+        var vapplication = {
+            tipoDePedido: $("#tipodepedido").val(),
+            noCliente: $("#nocliente").val(),
+            nombreCliente: $("#nombrecliente").val(),
+            producto: $("#producto").val(),
+            codigoVerificacion: $("#codigoverificacion").val(),
+            fechadeCreacion: $("#fechadecreacion").val(),
+            esFintech: Boolean($("#esfintech").val()),
+            monto: Number($("#monto").val()),
+            iva: Number($("#iva").val()),
+            montoFactura: Number($("#montofactura").val()),
+            comision: Number($("#comision").val()),
+            montoTotal: Number($("#montototal").val())
+        };
+        var vResolution = {
+            approved: Boolean(decision),
+            reason: "Manual approval"
+        };
+        var visaApplicationRequest = JSON.stringify(\{pedido: vapplication, resolution: vResolution\});
+
+        $.post("/paymentConfirmations/" + $("#pedido_p_id").val() + "/confirmarPago/" + $("#pedido_t_id").val() + userFilter, visaApplicationRequest, function () {
+
+        }, "json");
+    }
+
+    function initModal() {
+
+        $("#detailsModal").on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var action = button.data('action');
+            var id = button.data('id');
+            var modal = $(this);
+
+            $.getJSON("/paymentConfirmations/" + id + "/tasks"+userFilter, function (data) {
+                $.each(data, function (key, val) {
+                    if ("confirmarPago" == val.name) {
+                        modal.find('.modal-title').text("Confirmación de pago para " + button.data("nocliente") + ", " + button.data("nombrecliente"));
+                        modal.find('#tipodepedido').val(button.data("tipodepedido"));
+                        modal.find('#nocliente').val(button.data("nocliente"));
+                        modal.find('#nombrecliente').val(button.data("nombrecliente"));
+                        modal.find('#producto').val(button.data("producto"));
+                        modal.find('#codigoverificacion').val(button.data("codigoverificacion"));
+                        modal.find('#fechadecreacion').val(button.data("fechadecreacion"));
+                        modal.find('#esfintech').val(button.data("esfintech"));
+                        modal.find('#monto').val(button.data("monto"));
+                        modal.find('#iva').val(button.data("iva"));
+                        modal.find('#montofactura').val(button.data("montofactura"));
+                        modal.find('#comision').val(button.data("comision"));
+                        modal.find('#montototal').val(button.data("montototal"));
+
+                        $("#pedido_p_id").val(id);
+                        $("#pedido_t_id").val(val.id);
+                    }
+                });
+
+            })
+
+        })
+    }
+</script>
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title" id="detailsModalTitle">Detalles</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row">
+                        <input type="hidden" id="pedido_p_id"/>
+                        <input type="hidden" id="pedido_t_id"/>
+                        <div class="col-md-6 col-sm-6 col-xs-6">
+                            <div class="form-group">
+                                <h3>Fondeo</h3>
+                            </div>
+                            <div class="form-group">
+                                <label for="tipodepedido">Tipo</label> <input type="text"
+                                                                                 class="form-control" id="tipodepedido" name="tipodepedido" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombrecliente">Cliente</label> <input type="text"
+                                                                               class="form-control" id="nombrecliente" name="nombrecliente" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="monto">Monto</label> <input type="text"
+                                                                                    class="form-control" id="monto" name="monto" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                                <input type="hidden" class="form-control" id="nocliente" name="nocliente">
+                                <input type="hidden" class="form-control" id="producto" name="producto">
+                                <input type="hidden" class="form-control" id="fechadecreacion" name="fechadecreacion">
+                                <input type="hidden" class="form-control" id="codigoverificacion" name="codigoverificacion">
+                                <input type="hidden" class="form-control" id="esfintech" name="esfintech">
+                                <input type="hidden" class="form-control" id="iva" name="iva">
+                                <input type="hidden" class="form-control" id="montofactura" name="montofactura">
+                                <input type="hidden" class="form-control" id="comision" name="comision">
+                                <input type="hidden" class="form-control" id="montototal" name="montototal">
+                            </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="submitVisaApplicationApproval(true)">Confirmar</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="submitVisaApplicationApproval(false)">Cancelar</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
