@@ -25,23 +25,56 @@
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <style>
+        tr:nth-child(even), tr:nth-child(even) td {
+            background: #f5f5f5 !important;
+        }
+        tr:nth-child(odd), tr:nth-child(odd) td {
+            background: #FFF !important;
+        }
+        .main-siv{
+            color:white;
+            background: rgba(245, 145, 0, 0.95);
+            border-color: transparent;
+        }
+        .btn-primary{
+            border-radius: 5px;
+            color:white;
+            background: rgba(245, 145, 0, 0.95);
+            font-weight: bold;
+            border-color: transparent;
+        }
+        .btn-danger{
+            border-radius: 5px;
+            border-color: transparent;
+        }
+        .btn-default{
+            border-radius: 5px;
+            border-color: transparent;
+        }
+    </style>
 </head>
 <body>
-<div class="container" role="main">
-    <div class="jumbotron">
-        <h1>Confirmación de pago</h1>
+<div class="row"><img src="https://clientesuat.sivale.mx/assets/img/logo.png" style="width: auto; object-fit: none; height: 50px;"></div>
+<div class="row" role="main" style="display: flex; margin-left: 0px; margin-right: 0px;">
+    <div class="jumbotron col-md-3" style="color:white; background-color: white; background-repeat: no-repeat; background-image: url('https://clientesuat.sivale.mx/fondo.a5ab56f86c1edcf31225.png');    margin-top: 0px;
+    padding-top: 0px;
+    text-align: right;">
+        
+        <h2>Confirmación de pago</h2>
 
         <p>Servicio de confirmación de pago</p>
     </div>
-    <div class="page-header">
-        <div class="btn-group pull-right" role="group" style="padding-top: 10px;">
-            <button class="btn btn-primary" onclick="load();">
-                <span class="glyphicon glyphicon-refresh"></span> Actualizar
-            </button>
+    
+    <div class="col-md-9">
+        <div class="page-header col-md-12">
+            <div class="btn-group pull-right" role="group" style="padding-top: 10px;">
+                <button class="btn btn-primary" onclick="load();">
+                    <span class="glyphicon glyphicon-refresh"></span> Actualizar
+                </button>
+            </div>
+            <h1 style="color: rgba(245, 145, 0, 0.95);">Confirmación de pago</h1>
         </div>
-        <h1>Confirmación de pago</h1>
-    </div>
-    <div class="row">
         <div class="col-md-12">
             <table class="table">
                 <thead>
