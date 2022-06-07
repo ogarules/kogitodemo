@@ -1,3 +1,24 @@
+# Pedidos demo
+
+1. Dentro de extended/travels compilar : mvn clean package
+2. Dentro de extended/visas compilar : mvn clean package
+3. Dentro de extended/docker-compose correr : ./copyFiles.sh
+4. Dentro de extended/docker-compose correr : docker compose up -d
+5. Esperar 2 minutos a que termine de levantar todo
+6. Dentro de extended/travels compilar : mvn clean package quarkus:dev
+7. Dentro de extended/visas compilar : mvn clean package quarkus:dev
+8. Esperar 2 minutos a que terminen de levantar los sitios customizados
+9. Navegar a http://localhost:8380/TaskInbox
+10. Navegar a http://localhost:8280/ProcessInstances/
+11. Esperar que terminen de cargarse los sitios
+12. Dentro de extended/docker-compose/taskassets/<id-generado>/META-INF/resources/fonts/ reemplazar el archivo que esta en raiz del repo llamdo taskConsoleLogo.svg
+13. Dentro de extended/docker-compose/taskassets/<id-generado>/META-INF/vertx/web/ reemplazar el archivo que esta en raiz del repo llamdo favicon.ico
+12. Dentro de extended/docker-compose/managementassets/<id-generado>/META-INF/resources/fonts/ reemplazar el archivo que esta en raiz del repo llamdo managementConsoleLogo.svg
+13. Dentro de extended/docker-compose/managementassets/<id-generado>/META-INF/vertx/web/ reemplazar el archivo que esta en raiz del repo llamdo favicon.ico
+14. Borrar cache del browser de http://localhost:8380/TaskInbox y http://localhost:8280/ProcessInstances/ o abrir de nuevo en otro browser
+15. Sitio para crear fondeo http://localhost:8080/
+16. Sitio para confirmacion de pago http://localhost:8090/
+
 # Kogito Travel Agency - tutorial
 
 ## Description
