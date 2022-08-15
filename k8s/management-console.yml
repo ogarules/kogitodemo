@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: management-console-services-deployment
+  labels:
+    app: management-console-services
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app: management-console-services
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: management-console-services
+        version: v1
+    spec:
+      containers:
+      - name: management-console-services
+        image: containersoga/management-console
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - ALL
+        env:
+          - name: KOGITO_DATAINDEX_HTTP_URL
+            value: "http://localhost:8180/graphql"
+          - name: KOGITO_MANAGEMENT_CONSOLE_PROPS
+            value: "-Dkogito.consoles.keycloak.config.url=http://localhost:8480/auth -Dkogito.consoles.keycloak.config.health-check-url=http://localhost:8480/auth/realms/kogito/.well-known/openid-configuration -Dkogito.svg.folder.path=/home/kogito/data/svg"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: management-console-services
+spec:
+  selector:
+    app: management-console-services
+  ports:
+  - port: 8280
+    targetPort: 8080
+    name: http
+    protocol: TCP
+  type: LoadBalancer

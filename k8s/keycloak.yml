@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-services-deployment
+  labels:
+    app: keycloak-services
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app: keycloak-services
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: keycloak-services
+        version: v1
+    spec:
+      containers:
+      - name: keycloak-services
+        image: containersoga/keycloak
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - ALL
+        readinessProbe:
+            httpGet:
+              path: /auth/realms/kogito
+              port: 8080
+            initialDelaySeconds: 31
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+        env:
+          - name: KEYCLOAK_USER
+            value: admin
+          - name: KEYCLOAK_PASSWORD
+            value: admin
+          - name: KEYCLOAK_IMPORT
+            value: /tmp/kogito-realm.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-services
+spec:
+  selector:
+    app: keycloak-services
+  ports:
+  - port: 8480
+    targetPort: 8080
+    name: http
+    protocol: TCP
+  type: LoadBalancer

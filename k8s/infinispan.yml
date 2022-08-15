@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infinispan-services-deployment
+  labels:
+    app: infinispan-services
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app: infinispan-services
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: infinispan-services
+        version: v1
+    spec:
+      containers:
+      - name: infinispan-services
+        image: containersoga/infinispan
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 11222
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - ALL
+        readinessProbe:
+            httpGet:
+              path: /rest/v2/cache-managers/default/health/status
+              port: 11222
+            initialDelaySeconds: 31
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: infinispan-services
+spec:
+  selector:
+    app: infinispan-services
+  ports:
+  - port: 11222
+    targetPort: 11222
+    name: http
+    protocol: TCP
+  type: LoadBalancer

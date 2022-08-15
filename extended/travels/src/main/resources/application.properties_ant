@@ -1,37 +1,38 @@
 # Packaging
 # quarkus.package.type=fast-jar
 
-quarkus.http.port=8090
+quarkus.http.port=8080
 quarkus.http.cors=true
+quarkus.swagger-ui.always-include=true
 quarkus.devservices.enabled=false
+#quarkus.native.additional-build-args=-H:ResourceConfigurationFiles=resources-config.json
+quarkus.native.resources.includes=META-INF/**,org/**,templates/**,**.*
 
-kogito.service.url=${EXTERNAL_VISAS_HOST:http://localhost:8090}
-kogito.dataindex.http.url=${EXTERNAL_DATAINDEX_HOST_HTTP:http://localhost:8180}
-kogito.dataindex.ws.url=${EXTERNAL_DATAINDEX_HOST_WS:ws://localhost:8180}
+kogito.service.url=http://localhost:8080
+kogito.dataindex.http.url=http://localhost:8180
+kogito.dataindex.ws.url=ws://localhost:8180
 
-quarkus.oidc.auth-server-url=${EXTERNAL_HOST_KEYCLOAK:http://localhost:8281}/auth/realms/kogito
+quarkus.oidc.auth-server-url=http://localhost:8281/auth/realms/kogito
 quarkus.oidc.client-id=kogito-app
 quarkus.oidc.credentials.secret=secret
 
-
-quarkus.infinispan-client.server-list=${INTERNAL_INFINISPAN_HOST:localhost:11222}
+quarkus.infinispan-client.server-list=localhost:11222
 quarkus.infinispan-client.use-auth=false
 #quarkus.infinispan-client.server-list=kogito-infinispan:11222
 
-kafka.bootstrap.servers=${INTERNAL_KAFKA_HOST:localhost:9092}
+kafka.bootstrap.servers=localhost:9092
 
 ## main transport
 
 #mp.messaging.incoming.kogito_incoming_stream.bootstrap.servers=localhost:9092
 mp.messaging.incoming.kogito_incoming_stream.connector=smallrye-kafka
-#mp.messaging.incoming.kogito_incoming_stream.topic=visaapplications
-mp.messaging.incoming.kogito_incoming_stream.topic=paymentConfirmations
+mp.messaging.incoming.kogito_incoming_stream.topic=visasresponses
 mp.messaging.incoming.kogito_incoming_stream.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
-#mp.messaging.incoming.kogito_incoming_stream.auto.offset.reset=earliest
 
 #mp.messaging.outgoing.kogito_outgoing_stream.bootstrap.servers=localhost:9092
 mp.messaging.outgoing.kogito_outgoing_stream.connector=smallrye-kafka
-mp.messaging.outgoing.kogito_outgoing_stream.topic=visasresponses
+#mp.messaging.outgoing.kogito_outgoing_stream.topic=visaapplications
+mp.messaging.outgoing.kogito_outgoing_stream.topic=paymentConfirmations
 mp.messaging.outgoing.kogito_outgoing_stream.value.serializer=org.apache.kafka.common.serialization.StringSerializer
 
 ## metadata
@@ -50,5 +51,3 @@ mp.messaging.outgoing.kogito-usertaskinstances-events.value.serializer=org.apach
 mp.messaging.outgoing.kogito-variables-events.connector=smallrye-kafka
 mp.messaging.outgoing.kogito-variables-events.topic=kogito-variables-events
 mp.messaging.outgoing.kogito-variables-events.value.serializer=org.apache.kafka.common.serialization.StringSerializer
-
-kogito.monitoring.process.useDefault=false

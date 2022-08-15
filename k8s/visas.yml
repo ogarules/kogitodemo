@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visas-services-deployment
+  labels:
+    app: visas-console-services
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app: visas-console-services
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: visas-console-services
+        version: v1
+    spec:
+      containers:
+      - name: visas-console-services
+        image: containersoga/visas
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8090
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - ALL
+        env:
+          - name: EXTERNAL_VISAS_HOST
+            value: "http://localhost:8090"
+          - name: EXTERNAL_DATAINDEX_HOST_HTTP
+            value: "http://localhost:8180"
+          - name: EXTERNAL_DATAINDEX_HOST_WS
+            value: "ws://localhost:8180"
+          - name: EXTERNAL_HOST_KEYCLOAK
+            value: "http://localhost:8480"
+          - name: INTERNAL_INFINISPAN_HOST
+            value: "infinispan-services.default.svc.cluster.local:11222"
+          - name: INTERNAL_KAFKA_HOST
+            value: "kafka-services.default.svc.cluster.local:29092"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: visas-console-services
+spec:
+  selector:
+    app: visas-console-services
+  ports:
+  - port: 8090
+    targetPort: 8090
+    name: http
+    protocol: TCP
+  type: LoadBalancer

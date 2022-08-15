@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-index-services-deployment
+  labels:
+    app: data-index-services
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app: data-index-services
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: data-index-services
+        version: v1
+    spec:
+      containers:
+      - name: data-index-services
+        image: containersoga/data-index-infinispan
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - ALL
+        env:
+          - name: QUARKUS_INFINISPAN_CLIENT_SERVER_LIST
+            value: "infinispan-services.default.svc.cluster.local:11222"
+          - name: QUARKUS_INFINISPAN_CLIENT_USE_AUTH
+            value: "false"
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            value: "kafka-services.default.svc.cluster.local:29092"
+          - name: KOGITO_DATA_INDEX_PROPS
+            value: -Dkogito.protobuf.folder=/home/kogito/data/protobufs/
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-index-services
+spec:
+  selector:
+    app: data-index-services
+  ports:
+  - port: 8180
+    targetPort: 8080
+    name: http
+    protocol: TCP
+  type: LoadBalancer

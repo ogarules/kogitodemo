@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-console-services-deployment
+  labels:
+    app: task-console-services
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app: task-console-services
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: task-console-services
+        version: v1
+    spec:
+      containers:
+      - name: task-console-services
+        image: quay.io/kiegroup/kogito-task-console:1.21.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - ALL
+        env:
+          - name: KOGITO_DATAINDEX_HTTP_URL
+            value: "http://localhost:8180/graphql"
+          - name: KOGITO_TASK_CONSOLE_PROPS
+            value: "-Dkogito.consoles.keycloak.config.url=http://localhost:8480/auth -Dkogito.consoles.keycloak.config.health-check-url=http://localhost:8480/auth/realms/kogito/.well-known/openid-configuration"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-console-services
+spec:
+  selector:
+    app: task-console-services
+  ports:
+  - port: 8380
+    targetPort: 8080
+    name: http
+    protocol: TCP
+  type: LoadBalancer

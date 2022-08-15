@@ -5,20 +5,20 @@ quarkus.http.port=8090
 quarkus.http.cors=true
 quarkus.devservices.enabled=false
 
-kogito.service.url=${EXTERNAL_VISAS_HOST:http://localhost:8090}
-kogito.dataindex.http.url=${EXTERNAL_DATAINDEX_HOST_HTTP:http://localhost:8180}
-kogito.dataindex.ws.url=${EXTERNAL_DATAINDEX_HOST_WS:ws://localhost:8180}
+kogito.service.url=http://localhost:8090
+kogito.dataindex.http.url=http://localhost:8180
+kogito.dataindex.ws.url=ws://localhost:8180
 
-quarkus.oidc.auth-server-url=${EXTERNAL_HOST_KEYCLOAK:http://localhost:8281}/auth/realms/kogito
+quarkus.oidc.auth-server-url=http://localhost:8281/auth/realms/kogito
 quarkus.oidc.client-id=kogito-app
 quarkus.oidc.credentials.secret=secret
 
 
-quarkus.infinispan-client.server-list=${INTERNAL_INFINISPAN_HOST:localhost:11222}
+quarkus.infinispan-client.server-list=localhost:11222
 quarkus.infinispan-client.use-auth=false
 #quarkus.infinispan-client.server-list=kogito-infinispan:11222
 
-kafka.bootstrap.servers=${INTERNAL_KAFKA_HOST:localhost:9092}
+kafka.bootstrap.servers=localhost:9092
 
 ## main transport
 
